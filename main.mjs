@@ -5,7 +5,7 @@ import { MessageEmbed } from "discord.js";
 
 const client = new Discord.Client({ intents: ["GUILDS", "GUILD_MESSAGES"] });
 const prefix = "&";
-const APIKey = "RGAPI-65a5fa0a-aa50-430a-8ad1-56ecada05f2d";
+
 
 //var APICallString = "https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-name/"+ player + "?api_key=" + APIKey
 client.login(token);
