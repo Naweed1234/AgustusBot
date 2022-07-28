@@ -1,0 +1,187 @@
+import Discord from "discord.js";
+import token from "./token.js";
+import axios from "axios";
+import { MessageEmbed } from "discord.js";
+import APIKey from "./token2.js";
+
+const client = new Discord.Client({ intents: ["GUILDS", "GUILD_MESSAGES"] });
+const prefix = "&";
+
+//var APICallString = "https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-name/"+ player + "?api_key=" + APIKey
+client.login(token);
+
+client.on("ready", () => {
+  console.log("The bot is ready");
+});
+
+client.on("messageCreate", async (message) => {
+  if (!message.content.startsWith(prefix) || message.author.bot) return;
+  const param = message.content.slice(message.content.indexOf(" ") + 1);
+  const args = message.content.slice(prefix.length).trim().split(/ +/g);
+  const channelId = message.channel.id;
+  let command = args.shift().toLowerCase();
+  //console.log(param);
+
+  if (command == "search") {
+    await findPlayerStat(param, channelId, args);
+  } else if (command == "help") {
+    await helpCommand(channelId, args);
+  } else if (command == "owner") {
+    await ownerCommand(channelId, args);
+  } else {
+    await searchForPlayer(message.channel.id, message.author.username);
+  }
+});
+
+async function searchForPlayer(channelId, discordName) {
+  client.channels.cache
+    .get(channelId)
+    .send(
+      discordName +
+        ", that is not a command please use **&help** to find a list of available commands."
+    );
+}
+
+//  async function findPlayerStat(player,channelId, ) {
+
+//     var APICallString = "https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-name/"+ player + "?api_key=" + APIKey
+
+//     //axios.get(APICallString).then(function (response){
+//      //   client.channels.cache.get(channelId).send(response.data.summonerLevel + " ");
+
+//      try {
+//         const response = await axios.get(APICallString);
+//          client.channels.cache.get(channelId).send("**"+ player +"**'s "  + "Level is " + response.data.summonerLevel + " http://ddragon.leagueoflegends.com/cdn/12.13.1/img/profileicon/" + response.data.profileIconId +  ".png");
+
+//         } catch(error) {
+//         console.log(error);
+// //client.channel.catch.get(findPlayerStat)
+// }}
+
+async function findPlayerStat(player, channelId, encryptedSummonerId) {
+  var APICallString =
+    "https://na1.api.riotgames.com/lol/summoner/v4/summoners/by-name/" +
+    encodeURIComponent(player) +
+    "?api_key=" +
+    APIKey;
+
+  //axios.get(APICallString).then(function (response){
+  //   client.channels.cache.get(channelId).send(response.data.summonerLevel + " ");
+
+  try {
+    const response = await axios.get(APICallString);
+
+    var encryptedSummonerId = response.data.id;
+    var ApiForRank =
+      "https://na1.api.riotgames.com/lol/league/v4/entries/by-summoner/" +
+      encryptedSummonerId +
+      "?api_key=" +
+      APIKey;
+    const response2 = await axios.get(ApiForRank);
+    let set1 = Array.from(response2.data);
+    var roundedNumber = set1[0].wins / (set1[0].losses + set1[0].wins);
+    var lowerCaseTier = set1[0].tier;
+    const leagueTier = set1[0].tier;
+    const leagueTier2 = leagueTier.toLowerCase();
+    const leagueTier3 =
+      leagueTier2.charAt(0).toUpperCase() + leagueTier2.slice(1);
+    console.log(response2);
+
+    // console.log(set1);
+    // console.log(set1[0].rank);
+    // console.log(roundedNumber);
+    const playerStatEmbed = new MessageEmbed()
+
+      .setColor("GOLD")
+      .setTitle("**" + player + "**'s " + "Summoners Profile")
+      .setURL("https://na.op.gg/summoners/na/" + player)
+      .setDescription("**" + player + "**'s Information")
+      .setThumbnail(
+        " http://ddragon.leagueoflegends.com/cdn/12.13.1/img/profileicon/" +
+          response.data.profileIconId +
+          ".png"
+      )
+
+      .addFields(
+        { name: "Level ", value: response.data.summonerLevel + " " },
+        {
+          name: "Rank",
+          value:
+            leagueTier3 +
+            " " +
+            set1[0].rank +
+            " - " +
+            set1[0].leaguePoints +
+            "LP",
+        }
+      )
+      .addField("Winrate", Math.round(roundedNumber * 100) + "%", true)
+      .setImage()
+      .setTimestamp()
+      .setFooter({
+        text: "&help for a list of commands.",
+        iconURL:
+          "http://ddragon.leagueoflegends.com/cdn/12.13.1/img/profileicon/" +
+          response.data.profileIconId +
+          ".png",
+      });
+
+    client.channels.cache.get(channelId).send({ embeds: [playerStatEmbed] });
+  } catch (error) {
+    console.log(error);
+
+    //client.channel.catch.get(findPlayerStat)
+  }
+}
+
+async function helpCommand(channelId) {
+  try {
+    const helpEmbed = new MessageEmbed()
+      .setColor("GOLD")
+      .setTitle("**" + "Agustus help page" + "**")
+
+      .setDescription("Try out these commands below")
+
+      .addFields({
+        name: "&search [summoner name]",
+        value: "Displays summoner's Level, Rank, and Winrate ",
+      })
+      .addFields({
+        name: "&owner",
+        value:
+          "Shows creator of the bots' Github, Linkedin, and Contact Information",
+        inline: false,
+      })
+      .addFields({
+        name: "&help",
+        value: "Shows a list of available commands",
+        inline: false,
+      })
+      .setFooter({ text: "Agustus v1.4 • Bot Created 07/02/2022" });
+
+    client.channels.cache.get(channelId).send({ embeds: [helpEmbed] });
+  } catch (error) {
+    console.log(error);
+    //client.channel.catch.get(findPlayerStat)
+  }
+}
+async function ownerCommand(channelId) {
+  try {
+    const ownerEmbed = new MessageEmbed()
+      .setColor("GOLD")
+      .setTitle("About the Creator")
+      .setAuthor({
+        name: "Augustus™ by Naweed",
+        iconURL:
+          "https://cdn.discordapp.com/attachments/908195099928825888/1001980750318542858/discorbot.png",
+        url: "https://discord.js.org",
+      })
+      .setDescription(
+        "Naweed Yarzada is a 17-year-old based in Sterling, Virginia. He is currently a rising freshman at James Madison University with a major in Computer Science. Using Discord has always been a huge part of Naweeds' life as he is a video game enthusiast. He chose to create this project for fun as he loves League of Legends and also uses discord for communication\n\n**You can find him on the socials below** \n[🐈 GitHub](https://github.com/Naweed1234/AgustusBot)\n[🟦 LinkedIn](https://www.linkedin.com/in/naweed-yarzada-73940a20b/)\n[📷Instagram](https://www.instagram.com/naweed.yarzada/)\n\n"
+      );
+
+    client.channels.cache.get(channelId).send({ embeds: [ownerEmbed] });
+  } catch (error) {
+    console.log(error);
+  }
+}
